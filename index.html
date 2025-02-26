@@ -37,6 +37,11 @@
         .main {
             flex-grow: 1;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center content horizontally */
+            justify-content: center; /* Center content vertically */
+            text-align: center;
         }
         .tabs {
             display: flex;
@@ -79,13 +84,13 @@
             color: black;
             z-index: 2;
         }
-        .dialog input, .dialog select {
+        .dialog select {
             margin: 10px 0;
             padding: 5px;
             width: 100%;
         }
         table {
-            width: 100%;
+            width: 80%;
             border-collapse: collapse;
             margin-top: 20px;
             color: black;
@@ -100,6 +105,15 @@
             background: #4CAF50;
             color: white;
         }
+        #editScheduleForm {
+            display: none;
+            margin-top: 20px;
+        }
+        #editScheduleForm input {
+            margin: 5px 0;
+            padding: 5px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -107,13 +121,26 @@
     <div class="container">
         <div class="sidebar">
             <h2>My PPL Schedule</h2>
-            <p>Monday: Legs</p>
-            <p>Tuesday: Pull</p>
-            <p>Wednesday: Push</p>
-            <p>Thursday: Legs</p>
-            <p>Friday: Pull</p>
-            <p>Saturday: Push</p>
-            <p>Sunday: Rest/Cardio</p>
+            <div id="scheduleDisplay">
+                <p>Monday: <span id="mon">Legs</span></p>
+                <p>Tuesday: <span id="tue">Pull</span></p>
+                <p>Wednesday: <span id="wed">Push</span></p>
+                <p>Thursday: <span id="thu">Legs</span></p>
+                <p>Friday: <span id="fri">Pull</span></p>
+                <p>Saturday: <span id="sat">Push</span></p>
+                <p>Sunday: <span id="sun">Rest/Cardio</span></p>
+            </div>
+            <button onclick="toggleEditSchedule()">Edit Schedule</button>
+            <div id="editScheduleForm">
+                <input type="text" id="monInput" placeholder="Monday">
+                <input type="text" id="tueInput" placeholder="Tuesday">
+                <input type="text" id="wedInput" placeholder="Wednesday">
+                <input type="text" id="thuInput" placeholder="Thursday">
+                <input type="text" id="friInput" placeholder="Friday">
+                <input type="text" id="satInput" placeholder="Saturday">
+                <input type="text" id="sunInput" placeholder="Sunday">
+                <button onclick="saveSchedule()">Save</button>
+            </div>
         </div>
         <div class="main">
             <div class="tabs">
@@ -131,8 +158,51 @@
                         <option value="Legs">Legs</option>
                         <option value="Cardio">Cardio</option>
                     </select>
-                    <input type="text" id="exerciseName" placeholder="Exercise (e.g., Lat Pulldowns)">
-                    <input type="number" id="sets" placeholder="Sets Completed" min="1">
+                    <select id="exerciseName">
+                        <!-- Pull -->
+                        <option value="Lat Pulldowns">Lat Pulldowns</option>
+                        <option value="Seated Cable Pulls">Seated Cable Pulls</option>
+                        <option value="Iso-Lateral Rowing">Iso-Lateral Rowing</option>
+                        <option value="Standing T-Bar Row">Standing T-Bar Row</option>
+                        <option value="Dumbbell Curl">Dumbbell Curl</option>
+                        <option value="Standing Barbell Curl">Standing Barbell Curl</option>
+                        <option value="Seated Arm Curl">Seated Arm Curl</option>
+                        <!-- Push -->
+                        <option value="Incline Dumbbell Press">Incline Dumbbell Press</option>
+                        <option value="Flat Bench Press">Flat Bench Press</option>
+                        <option value="Cable Fly">Cable Fly</option>
+                        <option value="Triceps Pushdown">Triceps Pushdown</option>
+                        <option value="EZ Bar Skull Crushers">EZ Bar Skull Crushers</option>
+                        <option value="Dumbbell Shoulder Press">Dumbbell Shoulder Press</option>
+                        <option value="Lateral Raises">Lateral Raises</option>
+                        <!-- Legs -->
+                        <option value="Barbell Back Squats">Barbell Back Squats</option>
+                        <option value="Leg Press">Leg Press</option>
+                        <option value="Romanian Deadlifts">Romanian Deadlifts</option>
+                        <option value="Hip Thrusts">Hip Thrusts</option>
+                        <option value="Seated Leg Extensions">Seated Leg Extensions</option>
+                        <option value="Seated Leg Curls">Seated Leg Curls</option>
+                        <option value="Hip Abductor">Hip Abductor</option>
+                        <!-- Cardio -->
+                        <option value="Treadmill">Treadmill</option>
+                    </select>
+                    <select id="sets">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                    </select>
                     <button onclick="submitWorkout()">Submit</button>
                     <button onclick="closeDialog()">Cancel</button>
                 </div>
@@ -143,6 +213,7 @@
                     <thead>
                         <tr>
                             <th>Date</th>
+                            <th>Day</th>
                             <th>Type</th>
                             <th>Exercise</th>
                             <th>Sets</th>
