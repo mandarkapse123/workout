@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PPL Workout Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
             color: white;
             background-size: cover;
             background-position: center;
@@ -25,205 +28,541 @@
         }
         .container {
             display: flex;
-            height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
             position: relative;
             z-index: 1;
         }
-        .sidebar {
-            width: 250px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-        }
         .main {
-            flex-grow: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Center content horizontally */
-            justify-content: center; /* Center content vertically */
+            max-width: 1200px;
+            width: 100%;
             text-align: center;
+            padding-top: 60px; /* Space for fixed navigation */
         }
-        .tabs {
-            display: flex;
-            background: rgba(0, 0, 0, 0.8);
-            margin-bottom: 20px;
-        }
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            background: #333;
-        }
-        .tab.active {
-            background: #4CAF50;
-        }
-        .tab-content {
+        .section {
             display: none;
         }
-        .tab-content.active {
+        .section.active {
             display: block;
         }
-        button {
-            padding: 10px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #45a049;
-        }
-        .dialog {
-            display: none;
+        /* Navigation from Uiverse.io by 00Kubi */
+        .radio-inputs {
             position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            border-radius: 0.5rem;
+            background-color: #eee;
+            box-sizing: border-box;
+            box-shadow: 0 0 0px 1px rgba(0, 0, 0, 0.06);
+            padding: 0.25rem;
+            width: 300px;
+            font-size: 14px;
+            z-index: 10;
+        }
+        .radio-inputs .radio {
+            flex: 1 1 auto;
+            text-align: center;
+        }
+        .radio-inputs .radio input {
+            display: none;
+        }
+        .radio-inputs .radio .name {
+            display: flex;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            border: none;
+            padding: 0.5rem 0;
+            color: rgba(51, 65, 85, 1);
+            transition: all 0.15s ease-in-out;
+        }
+        .radio-inputs .radio input:checked + .name {
+            background-color: #fff;
+            font-weight: 600;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: select 0.3s ease;
+        }
+        .radio-inputs .radio:hover .name {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        @keyframes select {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .radio-inputs .radio input:checked + .name::before,
+        .radio-inputs .radio input:checked + .name::after {
+            content: "";
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #3b82f6;
+            opacity: 0;
+            animation: particles 0.5s ease forwards;
+        }
+        .radio-inputs .radio input:checked + .name::before {
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            --direction: -10px;
+        }
+        .radio-inputs .radio input:checked + .name::after {
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            --direction: 10px;
+        }
+        @keyframes particles {
+            0% { opacity: 0; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(var(--direction)); }
+        }
+        /* Card from Uiverse.io by dylanharriscameron */
+        .card {
+            position: relative;
+            width: 200px;
+            height: 250px;
+            border-radius: 14px;
+            z-index: 1111;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+        }
+        .bg {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 190px;
+            height: 240px;
+            z-index: 2;
+            background: rgba(255, 255, 255, .95);
+            backdrop-filter: blur(24px);
+            border-radius: 10px;
+            overflow: hidden;
+            outline: 2px solid white;
+        }
+        .blob {
+            position: absolute;
+            z-index: 1;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            color: black;
-            z-index: 2;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: #ff0000;
+            opacity: 1;
+            filter: blur(12px);
+            animation: blob-bounce 5s infinite ease;
         }
-        .dialog select {
-            margin: 10px 0;
-            padding: 5px;
+        @keyframes blob-bounce {
+            0% { transform: translate(-100%, -100%) translate3d(0, 0, 0); }
+            25% { transform: translate(-100%, -100%) translate3d(100%, 0, 0); }
+            50% { transform: translate(-100%, -100%) translate3d(100%, 100%, 0); }
+            75% { transform: translate(-100%, -100%) translate3d(0, 100%, 0); }
+            100% { transform: translate(-100%, -100%) translate3d(0, 0, 0); }
+        }
+        /* Log Button */
+        .log-button {
+            border: none;
+            width: 140px;
+            height: 50px;
+            color: #fff;
+            z-index: 1;
+            display: flex;
+            background: #000;
+            position: relative;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .log-button p {
+            margin: 0 auto;
+            align-self: center;
+            font-size: 17px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .log-button::after, .log-button::before {
+            position: absolute;
+            content: "";
             width: 100%;
+            height: 10%;
+            transition: 0.2s ease;
+            z-index: -1;
+            background: #4CAF50;
         }
-        table {
-            width: 80%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            color: black;
-            background: rgba(255, 255, 255, 0.9);
+        .log-button::after {
+            bottom: 0;
+            clip-path: polygon(0% 74%, 4% 75%, 8% 76%, 11% 77%, 15% 78%, 20% 78%, 25% 77%, 32% 77%, 37% 75%, 40% 74%, 43% 74%, 46% 73%, 52% 72%, 57% 72%, 65% 74%, 66% 75%, 71% 78%, 75% 82%, 81% 86%, 83% 88%, 88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%, 82% 100%, 0 100%);
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
         }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
+        .log-button::before {
+            transform: rotate(180deg);
+            clip-path: polygon(0% 74%, 4% 75%, 8% 76%, 11% 77%, 15% 78%, 20% 78%, 25% 77%, 32% 77%, 37% 75%, 40% 74%, 43% 74%, 46% 73%, 52% 72%, 57% 72%, 65% 74%, 66% 75%, 71% 78%, 75% 82%, 81% 86%, 83% 88%, 88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%, 82% 100%, 0 100%);
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
         }
-        th {
+        .log-button:hover::after, .log-button:hover::before {
+            clip-path: polygon(0 30%, 9% 34%, 7% 39%, 11% 43%, 13% 33%, 17% 30%, 24% 34%, 25% 35%, 30% 31%, 30% 38%, 39% 33%, 35% 43%, 43% 45%, 55% 46%, 65% 74%, 67% 66%, 81% 57%, 75% 82%, 81% 86%, 83% 88%, 88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%, 82% 100%, 0 100%);
+            height: 80%;
+        }
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
             background: #4CAF50;
             color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
-        #editScheduleForm {
-            display: none;
-            margin-top: 20px;
-        }
-        #editScheduleForm input {
-            margin: 5px 0;
-            padding: 5px;
-            width: 100%;
+        .notification.show {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
     <div class="blur"></div>
     <div class="container">
-        <div class="sidebar">
-            <h2>My PPL Schedule</h2>
-            <div id="scheduleDisplay">
-                <p>Monday: <span id="mon">Legs</span></p>
-                <p>Tuesday: <span id="tue">Pull</span></p>
-                <p>Wednesday: <span id="wed">Push</span></p>
-                <p>Thursday: <span id="thu">Legs</span></p>
-                <p>Friday: <span id="fri">Pull</span></p>
-                <p>Saturday: <span id="sat">Push</span></p>
-                <p>Sunday: <span id="sun">Rest/Cardio</span></p>
-            </div>
-            <button onclick="toggleEditSchedule()">Edit Schedule</button>
-            <div id="editScheduleForm">
-                <input type="text" id="monInput" placeholder="Monday">
-                <input type="text" id="tueInput" placeholder="Tuesday">
-                <input type="text" id="wedInput" placeholder="Wednesday">
-                <input type="text" id="thuInput" placeholder="Thursday">
-                <input type="text" id="friInput" placeholder="Friday">
-                <input type="text" id="satInput" placeholder="Saturday">
-                <input type="text" id="sunInput" placeholder="Sunday">
-                <button onclick="saveSchedule()">Save</button>
-            </div>
+        <div class="radio-inputs">
+            <label class="radio">
+                <input type="radio" name="section" checked onclick="switchSection('home')">
+                <span class="name">Home</span>
+            </label>
+            <label class="radio">
+                <input type="radio" name="section" onclick="switchSection('log')">
+                <span class="name">Log Workout</span>
+            </label>
+            <label class="radio">
+                <input type="radio" name="section" onclick="switchSection('progress')">
+                <span class="name">Progress</span>
+            </label>
         </div>
         <div class="main">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('log')">Log Workout</div>
-                <div class="tab" onclick="switchTab('progress')">Progress</div>
-            </div>
-            <div id="log" class="tab-content active">
-                <h1>Daily Workout Log</h1>
-                <button onclick="showDialog()">Log Workout</button>
-                <div id="dialog" class="dialog">
-                    <h3>Log Today's Workout</h3>
-                    <select id="workoutType">
-                        <option value="Push">Push</option>
-                        <option value="Pull">Pull</option>
-                        <option value="Legs">Legs</option>
-                        <option value="Cardio">Cardio</option>
-                    </select>
-                    <select id="exerciseName">
-                        <!-- Pull -->
-                        <option value="Lat Pulldowns">Lat Pulldowns</option>
-                        <option value="Seated Cable Pulls">Seated Cable Pulls</option>
-                        <option value="Iso-Lateral Rowing">Iso-Lateral Rowing</option>
-                        <option value="Standing T-Bar Row">Standing T-Bar Row</option>
-                        <option value="Dumbbell Curl">Dumbbell Curl</option>
-                        <option value="Standing Barbell Curl">Standing Barbell Curl</option>
-                        <option value="Seated Arm Curl">Seated Arm Curl</option>
-                        <!-- Push -->
-                        <option value="Incline Dumbbell Press">Incline Dumbbell Press</option>
-                        <option value="Flat Bench Press">Flat Bench Press</option>
-                        <option value="Cable Fly">Cable Fly</option>
-                        <option value="Triceps Pushdown">Triceps Pushdown</option>
-                        <option value="EZ Bar Skull Crushers">EZ Bar Skull Crushers</option>
-                        <option value="Dumbbell Shoulder Press">Dumbbell Shoulder Press</option>
-                        <option value="Lateral Raises">Lateral Raises</option>
-                        <!-- Legs -->
-                        <option value="Barbell Back Squats">Barbell Back Squats</option>
-                        <option value="Leg Press">Leg Press</option>
-                        <option value="Romanian Deadlifts">Romanian Deadlifts</option>
-                        <option value="Hip Thrusts">Hip Thrusts</option>
-                        <option value="Seated Leg Extensions">Seated Leg Extensions</option>
-                        <option value="Seated Leg Curls">Seated Leg Curls</option>
-                        <option value="Hip Abductor">Hip Abductor</option>
-                        <!-- Cardio -->
-                        <option value="Treadmill">Treadmill</option>
-                    </select>
-                    <select id="sets">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
-                        <option value="14">14</option>
-                        <option value="15">15</option>
-                    </select>
-                    <button onclick="submitWorkout()">Submit</button>
-                    <button onclick="closeDialog()">Cancel</button>
+            <!-- Homepage Section -->
+            <div id="home" class="section active">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="card">
+                            <div class="blob"></div>
+                            <div class="bg p-4 text-center text-gray-800">
+                                <h3 class="text-xl font-bold">Current Weight</h3>
+                                <p id="currentWeight" class="text-3xl mt-2">108 kg</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="blob" style="background-color: #4CAF50;"></div>
+                            <div class="bg p-4 text-center text-gray-800">
+                                <h3 class="text-xl font-bold">Today’s Exercise</h3>
+                                <p id="todayExercise" class="text-lg mt-2"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-100 bg-opacity-90 p-4 rounded-lg w-full md:w-72 mt-6 md:mt-0">
+                        <h2 class="text-xl font-bold text-gray-800">My Schedule</h2>
+                        <div id="scheduleDisplay" class="mt-2 text-gray-700">
+                            <p>Monday: <span id="mon">Legs</span></p>
+                            <p>Tuesday: <span id="tue">Pull</span></p>
+                            <p>Wednesday: <span id="wed">Push</span></p>
+                            <p>Thursday: <span id="thu">Legs</span></p>
+                            <p>Friday: <span id="fri">Pull</span></p>
+                            <p>Saturday: <span id="sat">Push</span></p>
+                            <p>Sunday: <span id="sun">Rest/Cardio</span></p>
+                        </div>
+                        <button class="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700" onclick="toggleEditSchedule()">Edit Schedule</button>
+                        <div id="editScheduleForm" class="hidden mt-2">
+                            <input type="text" id="monInput" placeholder="Monday" class="mt-2 p-2 w-full rounded">
+                            <input type="text" id="tueInput" placeholder="Tuesday" class="mt-2 p-2 w-full rounded">
+                            <input type="text" id="wedInput" placeholder="Wednesday" class="mt-2 p-2 w-full rounded">
+                            <input type="text" id="thuInput" placeholder="Thursday" class="mt-2 p-2 w-full rounded">
+                            <input type="text" id="friInput" placeholder="Friday" class="mt-2 p-2 w-full rounded">
+                            <input type="text" id="satInput" placeholder="Saturday" class="mt-2 p-2 w-full rounded">
+                            <input type="text" id="sunInput" placeholder="Sunday" class="mt-2 p-2 w-full rounded">
+                            <button class="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700" onclick="saveSchedule()">Save</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div id="progress" class="tab-content">
-                <h1>Workout Progress</h1>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Day</th>
-                            <th>Type</th>
-                            <th>Exercise</th>
-                            <th>Sets</th>
-                        </tr>
-                    </thead>
-                    <tbody id="progressBody"></tbody>
-                </table>
+            <!-- Log Workout Section -->
+            <div id="log" class="section">
+                <h1 class="text-3xl mb-6 font-bold">Log Workout</h1>
+                <div class="bg-gray-100 bg-opacity-90 p-4 rounded-lg max-w-[350px] shadow-lg mx-auto">
+                    <label class="text-gray-600 text-sm">Workout Type</label>
+                    <div class="relative mt-2 max-w-xs text-gray-500 flex items-center">
+                        <div class="w-16 h-8 flex items-center justify-center border-r pr-2 text-sm text-gray-700">Type</div>
+                        <select id="workoutType" class="w-full pl-4 pr-3 py-2 bg-transparent outline-none border focus:border-green-500 shadow-sm rounded-lg text-gray-700" onchange="filterExercises()">
+                            <option value="Push">Push</option>
+                            <option value="Pull">Pull</option>
+                            <option value="Legs">Legs</option>
+                            <option value="Cardio">Cardio</option>
+                        </select>
+                    </div>
+                    <label class="text-gray-600 text-sm mt-4">Exercise</label>
+                    <div class="relative mt-2 max-w-xs text-gray-500 flex items-center">
+                        <div class="w-16 h-8 flex items-center justify-center border-r pr-2 text-sm text-gray-700">Ex</div>
+                        <select id="exerciseName" class="w-full pl-4 pr-3 py-2 bg-transparent outline-none border focus:border-green-500 shadow-sm rounded-lg text-gray-700"></select>
+                    </div>
+                    <label class="text-gray-600 text-sm mt-4">Sets</label>
+                    <div class="relative mt-2 max-w-xs text-gray-500 flex items-center">
+                        <div class="w-16 h-8 flex items-center justify-center border-r pr-2 text-sm text-gray-700">#</div>
+                        <select id="sets" class="w-full pl-4 pr-3 py-2 bg-transparent outline-none border focus:border-green-500 shadow-sm rounded-lg text-gray-700">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                        </select>
+                    </div>
+                    <button class="log-button mt-6 mx-auto" onclick="submitWorkout()">
+                        <p>Log Workout</p>
+                    </button>
+                    <p id="suggestion" class="mt-2 text-gray-300 italic"></p>
+                    <div id="recentLogs" class="mt-4 text-left text-gray-700"></div>
+                </div>
+            </div>
+            <!-- Progress Section -->
+            <div id="progress" class="section">
+                <div class="bg-gray-100 bg-opacity-90 p-6 rounded-lg max-w-4xl shadow-lg mx-auto">
+                    <h1 class="text-3xl mb-6 font-bold text-gray-800">Workout Progress</h1>
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Type</th>
+                                <th>Exercise</th>
+                                <th>Sets</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progressBody"></tbody>
+                    </table>
+                    <canvas id="progressChart" class="mt-4"></canvas>
+                    <div id="gamification" class="mt-4 text-gray-700"></div>
+                </div>
             </div>
         </div>
+        <div id="notification" class="notification"></div>
     </div>
-    <script src="script.js"></script>
+    <script>
+        const backgrounds = {
+            Legs: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop',
+            Pull: 'https://images.unsplash.com/photo-1530822847156-097df527899d?q=80&w=2070&auto=format&fit=crop',
+            Push: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=2070&auto=format&fit=crop',
+            Cardio: 'https://images.unsplash.com/photo-1557339352-11d7e7aa85ae?q=80&w=2072&auto=format&fit=crop',
+            Rest: 'https://images.unsplash.com/photo-1506126611913-1ce16dad848f?q=80&w=2070&auto=format&fit=crop'
+        };
+
+        const exercisesByType = {
+            Pull: ['Lat Pulldowns', 'Seated Cable Pulls', 'Iso-Lateral Rowing', 'Standing T-Bar Row', 'Dumbbell Curl', 'Standing Barbell Curl', 'Seated Arm Curl'],
+            Push: ['Incline Dumbbell Press', 'Flat Bench Press', 'Cable Fly', 'Triceps Pushdown', 'EZ Bar Skull Crushers', 'Dumbbell Shoulder Press', 'Lateral Raises'],
+            Legs: ['Barbell Back Squats', 'Leg Press', 'Romanian Deadlifts', 'Hip Thrusts', 'Seated Leg Extensions', 'Seated Leg Curls', 'Hip Abductor'],
+            Cardio: ['Treadmill']
+        };
+
+        let recentLogs = JSON.parse(localStorage.getItem('recentLogs')) || [];
+        let streak = parseInt(localStorage.getItem('streak')) || 0;
+        let lastLogDate = localStorage.getItem('lastLogDate') || null;
+
+        function setBackgroundBasedOnType() {
+            const type = document.getElementById('workoutType')?.value || 'Rest';
+            document.body.style.backgroundImage = `url(${backgrounds[type] || backgrounds.Rest})`;
+        }
+
+        function setBackground() {
+            try {
+                const today = new Date().getDay();
+                const schedule = [
+                    document.getElementById('sun')?.textContent || 'Rest',
+                    document.getElementById('mon')?.textContent || 'Legs',
+                    document.getElementById('tue')?.textContent || 'Pull',
+                    document.getElementById('wed')?.textContent || 'Push',
+                    document.getElementById('thu')?.textContent || 'Legs',
+                    document.getElementById('fri')?.textContent || 'Pull',
+                    document.getElementById('sat')?.textContent || 'Push'
+                ];
+                const workout = schedule[today];
+                document.body.style.backgroundImage = `url(${backgrounds[workout] || backgrounds.Rest})`;
+                if (document.getElementById('todayExercise')) {
+                    document.getElementById('todayExercise').textContent = workout;
+                }
+            } catch (e) {
+                console.error('Background error:', e);
+                document.body.style.background = '#333';
+            }
+        }
+
+        function filterExercises() {
+            const type = document.getElementById('workoutType').value;
+            const exerciseDropdown = document.getElementById('exerciseName');
+            exerciseDropdown.innerHTML = '';
+            const exercises = exercisesByType[type] || [];
+            exercises.forEach(exercise => {
+                const option = document.createElement('option');
+                option.value = exercise;
+                option.textContent = exercise;
+                exerciseDropdown.appendChild(option);
+            });
+            setBackgroundBasedOnType();
+            document.getElementById('suggestion').textContent = `Try: ${exercises[0] || 'something new'} for ${type}!`;
+        }
+
+        function switchSection(sectionId) {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            if (sectionId === 'home') setBackground();
+            else if (sectionId === 'log') filterExercises();
+            else if (sectionId === 'progress') {
+                setBackground();
+                loadProgress();
+            }
+        }
+
+        function submitWorkout() {
+            const type = document.getElementById('workoutType').value;
+            const exercise = document.getElementById('exerciseName').value;
+            const sets = document.getElementById('sets').value;
+            const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                .replace(/(\d+)/, '$1th').replace('th', match => match === '1th' ? '1st' : match === '2th' ? '2nd' : match === '3th' ? '3rd' : 'th');
+            const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+            if (!exercise || !sets) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
+            const data = { date, day, type, exercise, sets };
+            saveToSheets(data);
+            document.getElementById('workoutType').selectedIndex = 0;
+            filterExercises();
+            document.getElementById('sets').selectedIndex = 0;
+
+            const today = new Date().toDateString();
+            if (lastLogDate) {
+                const last = new Date(lastLogDate);
+                const diff = (new Date(today) - last) / (1000 * 60 * 60 * 24);
+                if (diff === 1) streak++;
+                else if (diff > 1) streak = 1;
+            } else {
+                streak = 1;
+            }
+            lastLogDate = today;
+            localStorage.setItem('streak', streak);
+            localStorage.setItem('lastLogDate', lastLogDate);
+            showNotification(`Workout logged! Streak: ${streak} days`);
+        }
+
+        function saveToSheets(data) {
+            const url = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => {
+                console.log('Data saved to Sheets');
+                recentLogs.unshift(data);
+                recentLogs = recentLogs.slice(0, 3);
+                localStorage.setItem('recentLogs', JSON.stringify(recentLogs));
+                const recentLogsDiv = document.getElementById('recentLogs');
+                if (recentLogsDiv) {
+                    recentLogsDiv.innerHTML = '<h3 class="text-lg font-bold">Recent Logs</h3>' + 
+                        recentLogs.map(log => `<p>${log.date}: ${log.type} - ${log.exercise} (${log.sets} sets)</p>`).join('');
+                }
+            }).catch(err => console.error('Error:', err));
+        }
+
+        function loadProgress() {
+            const url = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('progressBody');
+                    tbody.innerHTML = '';
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${row.date}</td><td>${row.day}</td><td>${row.type}</td><td>${row.exercise}</td><td>${row.sets}</td>`;
+                        tbody.appendChild(tr);
+                    });
+
+                    const setsByType = {};
+                    data.forEach(row => {
+                        setsByType[row.type] = (setsByType[row.type] || 0) + parseInt(row.sets);
+                    });
+                    const ctx = document.getElementById('progressChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(setsByType),
+                            datasets: [{
+                                label: 'Total Sets',
+                                data: Object.values(setsByType),
+                                backgroundColor: ['#4CAF50', '#8792eb', '#F59E0B', '#EF4444'],
+                            }]
+                        },
+                        options: { scales: { y: { beginAtZero: true } } }
+                    });
+
+                    const gamificationDiv = document.getElementById('gamification');
+                    gamificationDiv.innerHTML = `<p class="text-lg font-bold">Streak: ${streak} days</p>` +
+                        (streak >= 5 ? '<p>🏅 Consistency Badge Earned!</p>' : '');
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    document.getElementById('progressBody').innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
+                });
+        }
+
+        function toggleEditSchedule() {
+            const form = document.getElementById('editScheduleForm');
+            form.classList.toggle('hidden');
+        }
+
+        function saveSchedule() {
+            const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            days.forEach(day => {
+                const input = document.getElementById(`${day}Input`)?.value.trim();
+                if (input) {
+                    document.getElementById(day).textContent = input;
+                    document.getElementById(`${day}Input`).value = '';
+                }
+            });
+            setBackground();
+            toggleEditSchedule();
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+
+        // Initialize
+        setBackground();
+    </script>
 </body>
 </html>
