@@ -96,7 +96,7 @@ function submitWorkout() {
 }
 
 function saveToSheets(data) {
-    const url = 'https://script.google.com/macros/s/AKfycbyFvHkef74IRUoFwAm5D7G9Q4YV0BrrettsG5NuM6BlUZ2zogh9B22EzHtgWKKacUvY/exec';
+    const url = 'https://script.google.com/macros/s/AKfycbwsZmB9riRAee2RLnKwlGY6Hovyaj7saCoCc8CjJLl1qCO9i5RY4R2NzBvMx_CkHRG3/exec';
     fetch(url, {
         method: 'POST',
         mode: 'no-cors',
@@ -116,7 +116,7 @@ function saveToSheets(data) {
 }
 
 function loadProgress() {
-    const url = 'https://script.google.com/macros/s/AKfycbyFvHkef74IRUoFwAm5D7G9Q4YV0BrrettsG5NuM6BlUZ2zogh9B22EzHtgWKKacUvY/exec';
+    const url = 'https://script.google.com/macros/s/AKfycbwsZmB9riRAee2RLnKwlGY6Hovyaj7saCoCc8CjJLl1qCO9i5RY4R2NzBvMx_CkHRG3/exec';
     fetch(url)
         .then(response => response.json())
         .then(data => {
