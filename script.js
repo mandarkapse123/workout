@@ -6,49 +6,58 @@ const backgrounds = {
     Rest: 'https://images.unsplash.com/photo-1506126611913-1ce16dad848f?q=80&w=2070&auto=format&fit=crop'
 };
 
+const exercisesByType = {
+    Pull: ['Lat Pulldowns', 'Seated Cable Pulls', 'Iso-Lateral Rowing', 'Standing T-Bar Row', 'Dumbbell Curl', 'Standing Barbell Curl', 'Seated Arm Curl'],
+    Push: ['Incline Dumbbell Press', 'Flat Bench Press', 'Cable Fly', 'Triceps Pushdown', 'EZ Bar Skull Crushers', 'Dumbbell Shoulder Press', 'Lateral Raises'],
+    Legs: ['Barbell Back Squats', 'Leg Press', 'Romanian Deadlifts', 'Hip Thrusts', 'Seated Leg Extensions', 'Seated Leg Curls', 'Hip Abductor'],
+    Cardio: ['Treadmill']
+};
+
+let recentLogs = JSON.parse(localStorage.getItem('recentLogs')) || [];
+let streak = parseInt(localStorage.getItem('streak')) || 0;
+let lastLogDate = localStorage.getItem('lastLogDate') || null;
+
+function setBackgroundBasedOnType() {
+    const type = document.getElementById('workoutType')?.value || 'Rest';
+    document.body.style.backgroundImage = `url(${backgrounds[type] || backgrounds.Rest})`;
+}
+
 function setBackground() {
     try {
         const today = new Date().getDay();
         const schedule = [
-            document.getElementById('sun').textContent,
-            document.getElementById('mon').textContent,
-            document.getElementById('tue').textContent,
-            document.getElementById('wed').textContent,
-            document.getElementById('thu').textContent,
-            document.getElementById('fri').textContent,
-            document.getElementById('sat').textContent
+            document.getElementById('sun')?.textContent || 'Rest',
+            document.getElementById('mon')?.textContent || 'Legs',
+            document.getElementById('tue')?.textContent || 'Pull',
+            document.getElementById('wed')?.textContent || 'Push',
+            document.getElementById('thu')?.textContent || 'Legs',
+            document.getElementById('fri')?.textContent || 'Pull',
+            document.getElementById('sat')?.textContent || 'Push'
         ];
         const workout = schedule[today];
         document.body.style.backgroundImage = `url(${backgrounds[workout] || backgrounds.Rest})`;
+        if (document.getElementById('todayExercise')) {
+            document.getElementById('todayExercise').textContent = workout;
+        }
     } catch (e) {
         console.error('Background error:', e);
         document.body.style.background = '#333';
     }
 }
-setBackground();
 
-// Tab switching
-function switchTab(tabId) {
-    const tabs = document.querySelectorAll('.tab');
-    const contents = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    contents.forEach(content => content.classList.remove('active'));
-
-    document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-
-    if (tabId === 'progress') {
-        loadProgress();
-    }
-}
-
-// Dialog control
-function showDialog() {
-    document.getElementById('dialog').style.display = 'block';
-}
-
-function closeDialog() {
-    document.getElementById('dialog').style.display = 'none';
+function filterExercises() {
+    const type = document.getElementById('workoutType').value;
+    const exerciseDropdown = document.getElementById('exerciseName');
+    exerciseDropdown.innerHTML = '';
+    const exercises = exercisesByType[type] || [];
+    exercises.forEach(exercise => {
+        const option = document.createElement('option');
+        option.value = exercise;
+        option.textContent = exercise;
+        exerciseDropdown.appendChild(option);
+    });
+    setBackgroundBasedOnType();
+    document.getElementById('suggestion').textContent = `Try: ${exercises[0] || 'something new'} for ${type}!`;
 }
 
 function submitWorkout() {
@@ -66,12 +75,28 @@ function submitWorkout() {
 
     const data = { date, day, type, exercise, sets };
     saveToSheets(data);
-    closeDialog();
+    document.getElementById('workoutType').selectedIndex = 0;
+    filterExercises();
+    document.getElementById('sets').selectedIndex = 0;
+
+    // Gamification: Update streak
+    const today = new Date().toDateString();
+    if (lastLogDate) {
+        const last = new Date(lastLogDate);
+        const diff = (new Date(today) - last) / (1000 * 60 * 60 * 24);
+        if (diff === 1) streak++;
+        else if (diff > 1) streak = 1;
+    } else {
+        streak = 1;
+    }
+    lastLogDate = today;
+    localStorage.setItem('streak', streak);
+    localStorage.setItem('lastLogDate', lastLogDate);
+    showNotification(`Workout logged! Streak: ${streak} days`);
 }
 
-// Google Sheets integration
 function saveToSheets(data) {
-    const url = 'https://script.google.com/macros/s/AKfycbyFvHkef74IRUoFwAm5D7G9Q4YV0BrrettsG5NuM6BlUZ2zogh9B22EzHtgWKKacUvY/exec'; // Replace with your URL
+    const url = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
     fetch(url, {
         method: 'POST',
         mode: 'no-cors',
@@ -79,11 +104,19 @@ function saveToSheets(data) {
         body: JSON.stringify(data)
     }).then(() => {
         console.log('Data saved to Sheets');
+        recentLogs.unshift(data);
+        recentLogs = recentLogs.slice(0, 3);
+        localStorage.setItem('recentLogs', JSON.stringify(recentLogs));
+        const recentLogsDiv = document.getElementById('recentLogs');
+        if (recentLogsDiv) {
+            recentLogsDiv.innerHTML = '<h3 class="text-lg font-bold">Recent Logs</h3>' + 
+                recentLogs.map(log => `<p>${log.date}: ${log.type} - ${log.exercise} (${log.sets} sets)</p>`).join('');
+        }
     }).catch(err => console.error('Error:', err));
 }
 
 function loadProgress() {
-    const url = 'https://script.google.com/macros/s/AKfycbyFvHkef74IRUoFwAm5D7G9Q4YV0BrrettsG5NuM6BlUZ2zogh9B22EzHtgWKKacUvY/exec'; // Same URL
+    const url = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -94,28 +127,66 @@ function loadProgress() {
                 tr.innerHTML = `<td>${row.date}</td><td>${row.day}</td><td>${row.type}</td><td>${row.exercise}</td><td>${row.sets}</td>`;
                 tbody.appendChild(tr);
             });
+
+            const setsByType = {};
+            data.forEach(row => {
+                setsByType[row.type] = (setsByType[row.type] || 0) + parseInt(row.sets);
+            });
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(setsByType),
+                    datasets: [{
+                        label: 'Total Sets',
+                        data: Object.values(setsByType),
+                        backgroundColor: ['#4CAF50', '#8792eb', '#F59E0B', '#EF4444'],
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+
+            const gamificationDiv = document.getElementById('gamification');
+            gamificationDiv.innerHTML = `<p class="text-lg font-bold">Streak: ${streak} days</p>` +
+                (streak >= 5 ? '<p>🏅 Consistency Badge Earned!</p>' : '');
         })
         .catch(err => {
-            console.error('Error loading progress:', err);
+            console.error('Error:', err);
             document.getElementById('progressBody').innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
         });
 }
 
-// Schedule editing
 function toggleEditSchedule() {
     const form = document.getElementById('editScheduleForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    form.classList.toggle('hidden');
 }
 
 function saveSchedule() {
     const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
     days.forEach(day => {
-        const input = document.getElementById(`${day}Input`).value.trim();
+        const input = document.getElementById(`${day}Input`)?.value.trim();
         if (input) {
             document.getElementById(day).textContent = input;
             document.getElementById(`${day}Input`).value = '';
         }
     });
-    setBackground(); // Update background after schedule change
+    setBackground();
     toggleEditSchedule();
+}
+
+function showNotification(message) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.classList.add('show');
+    setTimeout(() => notification.classList.remove('show'), 3000);
+}
+
+// Page-specific initialization
+if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+    setBackground();
+} else if (window.location.pathname.includes('log.html')) {
+    filterExercises();
+} else if (window.location.pathname.includes('progress.html')) {
+    setBackground();
+    loadProgress();
 }
