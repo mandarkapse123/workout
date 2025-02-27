@@ -60,6 +60,18 @@ function filterExercises() {
     document.getElementById('suggestion').textContent = `Try: ${exercises[0] || 'something new'} for ${type}!`;
 }
 
+function switchSection(sectionId) {
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(section => section.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+    if (sectionId === 'home') setBackground();
+    else if (sectionId === 'log') filterExercises();
+    else if (sectionId === 'progress') {
+        setBackground();
+        loadProgress();
+    }
+}
+
 function submitWorkout() {
     const type = document.getElementById('workoutType').value;
     const exercise = document.getElementById('exerciseName').value;
@@ -75,35 +87,23 @@ function submitWorkout() {
 
     const data = { date, day, type, exercise, sets };
     saveToSheets(data);
-    document.getElementById('workoutType').selectedIndex = 0;
-    filterExercises();
-    document.getElementById('sets').selectedIndex = 0;
-
-    // Gamification: Update streak
-    const today = new Date().toDateString();
-    if (lastLogDate) {
-        const last = new Date(lastLogDate);
-        const diff = (new Date(today) - last) / (1000 * 60 * 60 * 24);
-        if (diff === 1) streak++;
-        else if (diff > 1) streak = 1;
-    } else {
-        streak = 1;
-    }
-    lastLogDate = today;
-    localStorage.setItem('streak', streak);
-    localStorage.setItem('lastLogDate', lastLogDate);
-    showNotification(`Workout logged! Streak: ${streak} days`);
 }
 
 function saveToSheets(data) {
     const url = 'https://script.google.com/macros/s/AKfycbwsZmB9riRAee2RLnKwlGY6Hovyaj7saCoCc8CjJLl1qCO9i5RY4R2NzBvMx_CkHRG3/exec';
     fetch(url, {
         method: 'POST',
-        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
-    }).then(() => {
-        console.log('Data saved to Sheets');
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('Data saved:', result);
         recentLogs.unshift(data);
         recentLogs = recentLogs.slice(0, 3);
         localStorage.setItem('recentLogs', JSON.stringify(recentLogs));
@@ -112,48 +112,79 @@ function saveToSheets(data) {
             recentLogsDiv.innerHTML = '<h3 class="text-lg font-bold">Recent Logs</h3>' + 
                 recentLogs.map(log => `<p>${log.date}: ${log.type} - ${log.exercise} (${log.sets} sets)</p>`).join('');
         }
-    }).catch(err => console.error('Error:', err));
+
+        const today = new Date().toDateString();
+        if (lastLogDate) {
+            const last = new Date(lastLogDate);
+            const diff = (new Date(today) - last) / (1000 * 60 * 60 * 24);
+            if (diff === 1) streak++;
+            else if (diff > 1) streak = 1;
+        } else {
+            streak = 1;
+        }
+        lastLogDate = today;
+        localStorage.setItem('streak', streak);
+        localStorage.setItem('lastLogDate', lastLogDate);
+        showNotification(`Workout logged! Streak: ${streak} days`);
+
+        document.getElementById('workoutType').selectedIndex = 0;
+        filterExercises();
+        document.getElementById('sets').selectedIndex = 0;
+    })
+    .catch(err => {
+        console.error('Save error:', err);
+        showNotification('Failed to save workout. Check console for details.');
+    });
 }
 
 function loadProgress() {
     const url = 'https://script.google.com/macros/s/AKfycbwsZmB9riRAee2RLnKwlGY6Hovyaj7saCoCc8CjJLl1qCO9i5RY4R2NzBvMx_CkHRG3/exec';
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            const tbody = document.getElementById('progressBody');
-            tbody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.date}</td><td>${row.day}</td><td>${row.type}</td><td>${row.exercise}</td><td>${row.sets}</td>`;
-                tbody.appendChild(tr);
-            });
-
-            const setsByType = {};
-            data.forEach(row => {
-                setsByType[row.type] = (setsByType[row.type] || 0) + parseInt(row.sets);
-            });
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(setsByType),
-                    datasets: [{
-                        label: 'Total Sets',
-                        data: Object.values(setsByType),
-                        backgroundColor: ['#4CAF50', '#8792eb', '#F59E0B', '#EF4444'],
-                    }]
-                },
-                options: { scales: { y: { beginAtZero: true } } }
-            });
-
-            const gamificationDiv = document.getElementById('gamification');
-            gamificationDiv.innerHTML = `<p class="text-lg font-bold">Streak: ${streak} days</p>` +
-                (streak >= 5 ? '<p>🏅 Consistency Badge Earned!</p>' : '');
-        })
-        .catch(err => {
-            console.error('Error:', err);
-            document.getElementById('progressBody').innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
+    fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Fetched data:', data);
+        const tbody = document.getElementById('progressBody');
+        tbody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${row.date || ''}</td><td>${row.day || ''}</td><td>${row.type || ''}</td><td>${row.exercise || ''}</td><td>${row.sets || ''}</td>`;
+            tbody.appendChild(tr);
         });
+
+        const setsByType = {};
+        data.forEach(row => {
+            setsByType[row.type] = (setsByType[row.type] || 0) + (parseInt(row.sets) || 0);
+        });
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(setsByType).filter(key => setsByType[key] > 0),
+                datasets: [{
+                    label: 'Total Sets',
+                    data: Object.values(setsByType).filter(value => value > 0),
+                    backgroundColor: ['#4CAF50', '#8792eb', '#F59E0B', '#EF4444'],
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        const gamificationDiv = document.getElementById('gamification');
+        gamificationDiv.innerHTML = `<p class="text-lg font-bold">Streak: ${streak} days</p>` +
+            (streak >= 5 ? '<p>🏅 Consistency Badge Earned!</p>' : '');
+    })
+    .catch(err => {
+        console.error('Load error:', err);
+        document.getElementById('progressBody').innerHTML = '<tr><td colspan="5">Error loading data: ' + err.message + '</td></tr>';
+    });
 }
 
 function toggleEditSchedule() {
@@ -181,12 +212,7 @@ function showNotification(message) {
     setTimeout(() => notification.classList.remove('show'), 3000);
 }
 
-// Page-specific initialization
-if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-    setBackground();
-} else if (window.location.pathname.includes('log.html')) {
-    filterExercises();
-} else if (window.location.pathname.includes('progress.html')) {
-    setBackground();
-    loadProgress();
-}
+// Initialize
+setBackground();
+if (document.getElementById('log')) filterExercises();
+if (document.getElementById('progress')) loadProgress();
